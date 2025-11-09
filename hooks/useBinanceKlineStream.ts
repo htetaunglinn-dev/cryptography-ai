@@ -68,18 +68,6 @@ export function useBinanceKlineStream(
     }
   }, [initialData, symbol]);
 
-  // Convert Binance kline to OHLCV format
-  const convertKlineToOHLCV = useCallback((kline: BinanceKlineStream['k']): OHLCV => {
-    return {
-      timestamp: kline.t,
-      open: parseFloat(kline.o),
-      high: parseFloat(kline.h),
-      low: parseFloat(kline.l),
-      close: parseFloat(kline.c),
-      volume: parseFloat(kline.v),
-    };
-  }, []);
-
   // Handle incoming WebSocket messages
   const handleMessage = useCallback(
     (message: unknown) => {
@@ -107,7 +95,15 @@ export function useBinanceKlineStream(
           return;
         }
 
-        const newCandle = convertKlineToOHLCV(kline);
+        // Convert Binance kline to OHLCV format
+        const newCandle: OHLCV = {
+          timestamp: kline.t,
+          open: parseFloat(kline.o),
+          high: parseFloat(kline.h),
+          low: parseFloat(kline.l),
+          close: parseFloat(kline.c),
+          volume: parseFloat(kline.v),
+        };
 
         setOhlcvData((prev) => {
           // Check for duplicate or out-of-order messages
@@ -162,7 +158,7 @@ export function useBinanceKlineStream(
         });
       }
     },
-    [symbol, interval, convertKlineToOHLCV]
+    [symbol, interval]
   );
 
   // Handle WebSocket errors

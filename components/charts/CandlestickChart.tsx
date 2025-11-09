@@ -13,6 +13,7 @@ export function CandlestickChart({ data, symbol }: CandlestickChartProps) {
   const chartRef = useRef<ReturnType<typeof import('lightweight-charts').createChart> | null>(null);
   const seriesRef = useRef<ReturnType<ReturnType<typeof import('lightweight-charts').createChart>['addSeries']> | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const hasInitializedRef = useRef(false);
 
   // Only run on client side
   useEffect(() => {
@@ -33,6 +34,9 @@ export function CandlestickChart({ data, symbol }: CandlestickChartProps) {
         chartRef.current = null;
         seriesRef.current = null;
       }
+
+      // Reset initialization flag when chart is recreated
+      hasInitializedRef.current = false;
 
       // Create chart
       const chart = createChart(chartContainerRef.current, {
@@ -109,9 +113,10 @@ export function CandlestickChart({ data, symbol }: CandlestickChartProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     seriesRef.current.setData(chartData as any);
 
-    // Fit content on initial load
-    if (chartRef.current) {
+    // Fit content only on initial load, not on subsequent updates
+    if (chartRef.current && !hasInitializedRef.current) {
       chartRef.current.timeScale().fitContent();
+      hasInitializedRef.current = true;
     }
   }, [data]);
 

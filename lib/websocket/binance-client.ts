@@ -56,8 +56,8 @@ export class BinanceWebSocketClient {
         }
       };
 
-      this.ws.onerror = (event) => {
-        console.error('[BinanceWS] WebSocket error:', event);
+      this.ws.onerror = () => {
+        console.error('[BinanceWS] WebSocket error occurred');
         this.updateState('error');
         this.config.onError({
           message: 'WebSocket connection error',
