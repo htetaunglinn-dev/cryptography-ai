@@ -10,8 +10,8 @@ interface CandlestickChartProps {
 
 export function CandlestickChart({ data, symbol }: CandlestickChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
+  const chartRef = useRef<ReturnType<typeof import('lightweight-charts').createChart> | null>(null);
+  const seriesRef = useRef<ReturnType<ReturnType<typeof import('lightweight-charts').createChart>['addSeries']> | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   // Only run on client side
@@ -23,7 +23,7 @@ export function CandlestickChart({ data, symbol }: CandlestickChartProps) {
     if (!isClient || !chartContainerRef.current || data.length === 0) return;
 
     // Dynamic import to avoid SSR issues
-    import('lightweight-charts').then(({ createChart, ColorType }) => {
+    import('lightweight-charts').then(({ createChart, ColorType, CandlestickSeries }) => {
       if (!chartContainerRef.current) return;
 
       // Clean up previous chart
@@ -56,8 +56,8 @@ export function CandlestickChart({ data, symbol }: CandlestickChartProps) {
 
       chartRef.current = chart;
 
-      // Add candlestick series
-      const candlestickSeries = chart.addCandlestickSeries({
+      // Add candlestick series using v5 API
+      const candlestickSeries = chart.addSeries(CandlestickSeries, {
         upColor: '#10b981',
         downColor: '#ef4444',
         borderDownColor: '#ef4444',
