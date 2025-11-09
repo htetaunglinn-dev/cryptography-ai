@@ -38,13 +38,13 @@ export default function Home() {
     isConnected: isChartConnected,
     error: chartError,
     reconnect: reconnectChart,
-  } = useBinanceKlineStream(selectedSymbol, '1h', initialHistoricalData);
+  } = useBinanceKlineStream(selectedSymbol, '1d', initialHistoricalData);
 
   // Fetch initial historical data via REST API
   const fetchHistoricalData = useCallback(async (symbol: TradingPair) => {
     try {
       setIsLoadingChart(true);
-      const response = await fetch(`/api/crypto/historical?symbol=${symbol}&interval=1h&limit=200`);
+      const response = await fetch(`/api/crypto/historical?symbol=${symbol}&interval=1d&limit=200`);
       const data = await response.json();
 
       if (data.success) {
@@ -72,7 +72,7 @@ export default function Home() {
       const response = await fetch('/api/analysis/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, interval: '1h', forceRefresh }),
+        body: JSON.stringify({ symbol, interval: '1d', forceRefresh }),
       });
       const data = await response.json();
 
