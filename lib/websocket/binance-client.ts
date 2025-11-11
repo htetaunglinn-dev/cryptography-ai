@@ -15,6 +15,7 @@ export class BinanceWebSocketClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private isDisconnecting = false;
 
   constructor(config: BinanceWebSocketConfig) {
     this.config = config;
@@ -26,6 +27,7 @@ export class BinanceWebSocketClient {
       return;
     }
 
+    this.isDisconnecting = false;
     this.updateState('connecting');
 
     try {
@@ -57,26 +59,31 @@ export class BinanceWebSocketClient {
       };
 
       this.ws.onerror = () => {
-        console.error('[BinanceWS] WebSocket error occurred');
-        this.updateState('error');
-        this.config.onError({
-          message: 'WebSocket connection error',
-          code: 'CONNECTION_ERROR',
-          timestamp: Date.now(),
-        });
+        // Only handle errors if not in the middle of disconnecting
+        if (!this.isDisconnecting) {
+          console.error('[BinanceWS] WebSocket error occurred');
+          this.updateState('error');
+          this.config.onError({
+            message: 'WebSocket connection error',
+            code: 'CONNECTION_ERROR',
+            timestamp: Date.now(),
+          });
+        }
       };
 
       this.ws.onclose = (event) => {
         console.log('[BinanceWS] Connection closed:', event.code, event.reason);
-        this.updateState('disconnected');
 
-        // Don't auto-reconnect per requirements (show error, manual reconnect)
-        if (!event.wasClean) {
+        // Only handle errors if not a clean disconnect
+        if (!this.isDisconnecting && !event.wasClean) {
+          this.updateState('disconnected');
           this.config.onError({
             message: `Connection closed unexpectedly: ${event.reason || 'Unknown reason'}`,
             code: `CLOSE_${event.code}`,
             timestamp: Date.now(),
           });
+        } else {
+          this.updateState('disconnected');
         }
       };
     } catch (error) {
@@ -97,9 +104,22 @@ export class BinanceWebSocketClient {
     }
 
     if (this.ws) {
+      this.isDisconnecting = true;
       this.updateState('disconnecting');
-      this.ws.close(1000, 'Client disconnect');
+
+      // Remove event listeners before closing to prevent errors
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+
+      // Close connection if still open
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        this.ws.close(1000, 'Client disconnect');
+      }
+
       this.ws = null;
+      this.updateState('disconnected');
     }
   }
 
