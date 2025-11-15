@@ -9,14 +9,15 @@ import { PriceCard } from '@/components/PriceCard';
 import { RSICard, MACDCard, BollingerBandsCard, EMACard } from '@/components/indicators';
 import { ClaudeInsightsPanel } from '@/components/ai';
 import { CandlestickChart } from '@/components/charts';
+import { TradingPairSearch } from '@/components/TradingPairSearch';
 import { useBinanceTickerStream } from '@/hooks/useBinanceTickerStream';
 import { useBinanceKlineStream } from '@/hooks/useBinanceKlineStream';
 import { useIndicatorHistory } from '@/hooks/useIndicatorHistory';
-
-const TRADING_PAIRS: TradingPair[] = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT'];
+import { loadWatchlist, addToWatchlist, isWatchlistFull } from '@/lib/storage/watchlist';
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const [watchlistPairs, setWatchlistPairs] = useState<string[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<TradingPair>('BTCUSDT');
   const [initialHistoricalData, setInitialHistoricalData] = useState<OHLCV[]>([]);
   const [analysis, setAnalysis] = useState<ClaudeAnalysis | null>(null);
@@ -24,6 +25,15 @@ export default function Home() {
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
+
+  useEffect(() => {
+    const pairs = loadWatchlist();
+    setWatchlistPairs(pairs);
+    if (pairs.length > 0) {
+      setSelectedSymbol(pairs[0] as TradingPair);
+    }
+  }, []);
 
   // WebSocket hooks for real-time data
   const {
@@ -31,7 +41,7 @@ export default function Home() {
     isConnected: isPricesConnected,
     error: pricesError,
     reconnect: reconnectPrices,
-  } = useBinanceTickerStream(TRADING_PAIRS);
+  } = useBinanceTickerStream(watchlistPairs as TradingPair[]);
 
   const {
     ohlcvData,
@@ -113,6 +123,17 @@ export default function Home() {
     }
   }, [pricesError, chartError]);
 
+  const handleAddPair = useCallback((symbol: string) => {
+    try {
+      const updatedPairs = addToWatchlist(symbol);
+      if (updatedPairs) {
+        setWatchlistPairs(updatedPairs);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add pair to watchlist');
+    }
+  }, []);
+
   const currentPrice = prices.find((p) => p.symbol === selectedSymbol);
 
   return (
@@ -150,6 +171,22 @@ export default function Home() {
                       <span className="text-xs text-green-500">Live</span>
                     </div>
                   )}
+                </div>
+
+                {/* Search Input */}
+                <div className="mb-3">
+                  <button
+                    onClick={() => setShowSearchDialog(true)}
+                    disabled={isWatchlistFull()}
+                    className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2.5 text-left text-sm text-gray-500 hover:border-gray-600 hover:bg-gray-800/80 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span>
+                      {isWatchlistFull() ? 'Watchlist full (10/10)' : 'Search to add pairs...'}
+                    </span>
+                  </button>
                 </div>
                 {prices.length === 0 ? (
                   <div className="space-y-2">
@@ -307,6 +344,14 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {showSearchDialog && (
+        <TradingPairSearch
+          onSelect={handleAddPair}
+          onClose={() => setShowSearchDialog(false)}
+          excludedSymbols={watchlistPairs}
+        />
+      )}
     </div>
   );
 }
