@@ -16,20 +16,20 @@ interface EMACardProps {
 function EMACardComponent({ ema, currentPrice }: EMACardProps) {
   const getTrend = () => {
     if (ema.ema9 > ema.ema21 && ema.ema21 > ema.ema50 && ema.ema50 > ema.ema200) {
-      return { text: 'Strong Uptrend', color: 'text-green-500', bg: 'bg-green-500/20' };
+      return { text: 'Strong ↑', color: 'text-green-500', bg: 'bg-green-500/20' };
     }
     if (ema.ema9 < ema.ema21 && ema.ema21 < ema.ema50 && ema.ema50 < ema.ema200) {
-      return { text: 'Strong Downtrend', color: 'text-red-500', bg: 'bg-red-500/20' };
+      return { text: 'Strong ↓', color: 'text-red-500', bg: 'bg-red-500/20' };
     }
-    return { text: 'Mixed Signals', color: 'text-yellow-500', bg: 'bg-yellow-500/20' };
+    return { text: 'Mixed →', color: 'text-yellow-500', bg: 'bg-yellow-500/20' };
   };
 
   const trend = getTrend();
   const above200 = currentPrice > ema.ema200;
 
   const getBackgroundGradient = () => {
-    if (trend.text === 'Strong Uptrend') return 'from-green-500/10 to-transparent';
-    if (trend.text === 'Strong Downtrend') return 'from-red-500/10 to-transparent';
+    if (trend.text === 'Strong ↑') return 'from-green-500/10 to-transparent';
+    if (trend.text === 'Strong ↓') return 'from-red-500/10 to-transparent';
     return 'from-yellow-500/10 to-transparent';
   };
 
@@ -37,7 +37,7 @@ function EMACardComponent({ ema, currentPrice }: EMACardProps) {
     <div className={`rounded-lg border border-gray-800 bg-gradient-to-br ${getBackgroundGradient()} bg-gray-900 p-6 shadow-lg`}>
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">EMA Indicators</h3>
-        <span className={`rounded-full px-3 py-1 text-sm font-semibold ${trend.color} ${trend.bg}`}>
+        <span className={`rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap ${trend.color} ${trend.bg}`}>
           {trend.text}
         </span>
       </div>
@@ -67,8 +67,8 @@ function EMACardComponent({ ema, currentPrice }: EMACardProps) {
       <div className="border-t border-gray-800 pt-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-400">Price vs EMA200</span>
-          <span className={`rounded-full px-3 py-1 text-sm font-bold ${above200 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-            {above200 ? 'Above (Bullish)' : 'Below (Bearish)'}
+          <span className={`rounded-full px-3 py-1 text-sm font-bold whitespace-nowrap ${above200 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+            {above200 ? 'Above ↑' : 'Below ↓'}
           </span>
         </div>
       </div>

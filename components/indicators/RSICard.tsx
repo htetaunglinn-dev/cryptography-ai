@@ -24,9 +24,9 @@ function RSICardComponent({ data, history }: RSICardProps) {
   };
 
   const getSignalText = () => {
-    if (data.signal === 'overbought') return 'Overbought';
-    if (data.signal === 'oversold') return 'Oversold';
-    return 'Neutral';
+    if (data.signal === 'overbought') return 'Overbought ↓';
+    if (data.signal === 'oversold') return 'Oversold ↑';
+    return 'Neutral →';
   };
 
   const getBackgroundGradient = () => {
@@ -138,7 +138,7 @@ function RSICardComponent({ data, history }: RSICardProps) {
     <div className={`rounded-lg border border-gray-800 bg-gradient-to-br ${getBackgroundGradient()} bg-gray-900 p-6 shadow-lg`}>
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">RSI (14)</h3>
-        <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getColor()} ${
+        <span className={`rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap ${getColor()} ${
           data.value > 70 ? 'bg-red-500/20' : data.value < 30 ? 'bg-green-500/20' : 'bg-yellow-500/20'
         }`}>
           {getSignalText()}

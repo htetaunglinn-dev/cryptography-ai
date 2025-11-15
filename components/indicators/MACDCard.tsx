@@ -141,8 +141,8 @@ function MACDCardComponent({ data, history }: MACDCardProps) {
     <div className={`rounded-lg border border-gray-800 bg-gradient-to-br ${isBullish ? 'from-green-500/20 to-transparent' : 'from-red-500/20 to-transparent'} bg-gray-900 p-6 shadow-lg`}>
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">MACD</h3>
-        <span className={`rounded-full px-3 py-1 text-sm font-semibold ${isBullish ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-          {isBullish ? 'Bullish' : 'Bearish'}
+        <span className={`rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap ${isBullish ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+          {isBullish ? 'Bullish ↑' : 'Bearish ↓'}
         </span>
       </div>
 

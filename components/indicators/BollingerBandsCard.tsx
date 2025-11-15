@@ -66,10 +66,9 @@ function BollingerBandsCardComponent({ data, currentPrice, history }: BollingerB
         valueYField: 'upper',
         valueXField: 'time',
         stroke: am5.color(0x3b82f6),
-        strokeOpacity: 0.5,
       })
     );
-    upperSeries.strokes.template.setAll({ strokeWidth: 1, strokeDasharray: [3, 3] });
+    upperSeries.strokes.template.setAll({ strokeWidth: 1, strokeDasharray: [3, 3], strokeOpacity: 0.5 });
 
     const middleSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
@@ -91,10 +90,9 @@ function BollingerBandsCardComponent({ data, currentPrice, history }: BollingerB
         valueYField: 'lower',
         valueXField: 'time',
         stroke: am5.color(0x3b82f6),
-        strokeOpacity: 0.5,
       })
     );
-    lowerSeries.strokes.template.setAll({ strokeWidth: 1, strokeDasharray: [3, 3] });
+    lowerSeries.strokes.template.setAll({ strokeWidth: 1, strokeDasharray: [3, 3], strokeOpacity: 0.5 });
 
     const priceSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
@@ -158,8 +156,8 @@ function BollingerBandsCardComponent({ data, currentPrice, history }: BollingerB
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">Bollinger Bands</h3>
         {isSqueeze && (
-          <span className="animate-pulse rounded-full bg-orange-500/20 px-3 py-1 text-xs font-semibold text-orange-500">
-            Squeeze
+          <span className="animate-pulse rounded-full bg-orange-500/20 px-3 py-1 text-xs font-semibold text-orange-500 whitespace-nowrap">
+            Squeeze ⚡
           </span>
         )}
       </div>
@@ -187,12 +185,12 @@ function BollingerBandsCardComponent({ data, currentPrice, history }: BollingerB
           <div className="text-sm font-bold text-white">{data.bandwidth.toFixed(2)}%</div>
         </div>
         <div>
-          <span className={`rounded-full px-2 py-1 text-xs font-bold ${
+          <span className={`rounded-full px-2 py-1 text-xs font-bold whitespace-nowrap ${
             position === 'Above' ? 'bg-red-500/20 text-red-500' :
             position === 'Below' ? 'bg-green-500/20 text-green-500' :
             'bg-yellow-500/20 text-yellow-500'
           }`}>
-            {position}
+            {position === 'Above' ? 'Above ↑' : position === 'Below' ? 'Below ↓' : 'Within →'}
           </span>
         </div>
       </div>
