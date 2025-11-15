@@ -88,7 +88,12 @@ export function addToWatchlist(pair: string): string[] | null {
 export function removeFromWatchlist(pair: string): string[] | null {
   const currentPairs = loadWatchlist();
 
-  // Check min size
+  // Check if pair exists in the list
+  if (!currentPairs.includes(pair)) {
+    return currentPairs;
+  }
+
+  // Check min size after confirming the pair exists
   if (currentPairs.length <= MIN_WATCHLIST_SIZE) {
     throw new Error(`Minimum watchlist size (${MIN_WATCHLIST_SIZE}) required`);
   }

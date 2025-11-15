@@ -106,10 +106,16 @@ export function useBinanceTickerStream(symbols: TradingPair[]): UseBinanceTicker
     wsClientRef.current?.reconnect();
   }, []);
 
+  // Filter prices to only include symbols in the current watchlist
+  useEffect(() => {
+    setPrices((prev) => prev.filter((price) => symbols.includes(price.symbol as TradingPair)));
+  }, [symbols]);
+
   // Initialize WebSocket connection
   useEffect(() => {
     if (symbols.length === 0) {
       console.warn('[TickerStream] No symbols provided');
+      setPrices([]);
       return;
     }
 

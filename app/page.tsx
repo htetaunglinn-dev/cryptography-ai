@@ -13,7 +13,7 @@ import { TradingPairSearch } from '@/components/TradingPairSearch';
 import { useBinanceTickerStream } from '@/hooks/useBinanceTickerStream';
 import { useBinanceKlineStream } from '@/hooks/useBinanceKlineStream';
 import { useIndicatorHistory } from '@/hooks/useIndicatorHistory';
-import { loadWatchlist, addToWatchlist, isWatchlistFull } from '@/lib/storage/watchlist';
+import { loadWatchlist, addToWatchlist, removeFromWatchlist, isWatchlistFull, isWatchlistAtMinimum } from '@/lib/storage/watchlist';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -134,6 +134,21 @@ export default function Home() {
     }
   }, []);
 
+  const handleRemovePair = useCallback((symbol: string) => {
+    try {
+      const updatedPairs = removeFromWatchlist(symbol);
+      if (updatedPairs) {
+        setWatchlistPairs(updatedPairs);
+
+        if (symbol === selectedSymbol && updatedPairs.length > 0) {
+          setSelectedSymbol(updatedPairs[0] as TradingPair);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove pair from watchlist');
+    }
+  }, [selectedSymbol]);
+
   const currentPrice = prices.find((p) => p.symbol === selectedSymbol);
 
   return (
@@ -204,6 +219,8 @@ export default function Home() {
                       price={price}
                       isSelected={price.symbol === selectedSymbol}
                       onClick={() => setSelectedSymbol(price.symbol as TradingPair)}
+                      onRemove={handleRemovePair}
+                      canRemove={!isWatchlistAtMinimum()}
                     />
                   ))
                 )}
