@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import type { CryptoPrice, AllIndicators, ClaudeAnalysis, TradingPair, HistoricalData, OHLCV } from '@/types';
+import type { FearGreedData, FearGreedHistoryPoint, FearGreedResponse } from '@/types/fear-greed';
 import { Header } from '@/components/Header';
 import { PriceCard } from '@/components/PriceCard';
 import { RSICard, MACDCard, BollingerBandsCard, EMACard } from '@/components/indicators';
@@ -26,6 +27,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [fearGreedData, setFearGreedData] = useState<FearGreedData | null>(null);
+  const [fearGreedHistory, setFearGreedHistory] = useState<FearGreedHistoryPoint[]>([]);
 
   useEffect(() => {
     const pairs = loadWatchlist();
@@ -122,6 +125,22 @@ export default function Home() {
       setError(null);
     }
   }, [pricesError, chartError]);
+
+  // Fetch Fear & Greed Index data
+  useEffect(() => {
+    const fetchFearGreed = async () => {
+      try {
+        const response = await fetch('/api/fear-greed');
+        const data: FearGreedResponse = await response.json();
+        setFearGreedData(data.current);
+        setFearGreedHistory(data.history);
+      } catch (err) {
+        console.error('Error fetching Fear & Greed data:', err);
+      }
+    };
+
+    fetchFearGreed();
+  }, []);
 
   const handleAddPair = useCallback((symbol: string) => {
     try {
@@ -348,6 +367,8 @@ export default function Home() {
                 analysis={analysis}
                 isLoading={isLoadingAnalysis}
                 onRefresh={() => fetchAnalysis(selectedSymbol, true)}
+                fearGreedData={fearGreedData}
+                fearGreedHistory={fearGreedHistory}
               />
             </div>
           </div>

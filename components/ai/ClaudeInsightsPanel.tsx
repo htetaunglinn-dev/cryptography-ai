@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import type { ClaudeAnalysis } from "@/types";
+import type { FearGreedData, FearGreedHistoryPoint } from "@/types/fear-greed";
 import { TradingSignal } from "./TradingSignal";
 import { RiskScore } from "./RiskScore";
+import { FearGreedGauge } from "./FearGreedGauge";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils";
 
 interface ClaudeInsightsPanelProps {
   analysis: ClaudeAnalysis | null;
   isLoading: boolean;
   onRefresh: () => void;
+  fearGreedData: FearGreedData | null;
+  fearGreedHistory: FearGreedHistoryPoint[];
 }
 
 export function ClaudeInsightsPanel({
   analysis,
   isLoading,
   onRefresh,
+  fearGreedData,
+  fearGreedHistory,
 }: ClaudeInsightsPanelProps) {
   const [activeTab, setActiveTab] = useState<
     "overview" | "patterns" | "levels"
@@ -89,6 +95,8 @@ export function ClaudeInsightsPanel({
       />
 
       <RiskScore assessment={analysis.riskAssessment} />
+
+      <FearGreedGauge data={fearGreedData} history={fearGreedHistory} />
 
       <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
         <div className="mb-4 flex space-x-2 border-b border-gray-800">
