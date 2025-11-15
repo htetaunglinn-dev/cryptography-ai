@@ -49,8 +49,8 @@ function FearGreedGaugeComponent({ data, history }: FearGreedGaugeProps) {
       am5radar.RadarChart.new(root, {
         panX: false,
         panY: false,
-        startAngle: -90,
-        endAngle: 90,
+        startAngle: 180,
+        endAngle: 360,
         innerRadius: am5.percent(70),
       })
     );
