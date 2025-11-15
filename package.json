@@ -12,6 +12,7 @@
     "@amcharts/amcharts5": "^5.14.4",
     "@anthropic-ai/sdk": "^0.68.0",
     "@auth/mongodb-adapter": "^3.11.1",
+    "@google/generative-ai": "^0.21.0",
     "axios": "^1.13.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",

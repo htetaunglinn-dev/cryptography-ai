@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [apiKey, setApiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState<'claude' | 'gemini'>('claude');
   const [hasKey, setHasKey] = useState(false);
   const [keyPreview, setKeyPreview] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +32,7 @@ export default function SettingsPage() {
       if (data.success) {
         setHasKey(data.data.hasKey);
         setKeyPreview(data.data.keyPreview || '');
+        setAiProvider(data.data.aiProvider || 'claude');
       }
     } catch (error) {
       console.error('Error fetching API key status:', error);
@@ -48,7 +50,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/user/api-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey }),
+        body: JSON.stringify({ apiKey, aiProvider }),
       });
 
       const data = await response.json();
@@ -144,17 +146,9 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">Anthropic API Key</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">AI Provider Configuration</h2>
               <p className="text-sm text-gray-400 mb-4">
-                Add your Anthropic API key to enable Claude AI analysis features. Get your API key from{' '}
-                <a
-                  href="https://console.anthropic.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-400"
-                >
-                  console.anthropic.com
-                </a>
+                Choose your AI provider and add your API key to enable AI analysis features.
               </p>
 
               {message && (
@@ -179,7 +173,9 @@ export default function SettingsPage() {
                 <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-500">API Key Configured</p>
+                      <p className="text-sm font-medium text-green-500">
+                        API Key Configured ({aiProvider === 'claude' ? 'Claude' : 'Gemini'})
+                      </p>
                       <p className="text-xs text-gray-400 mt-1">{keyPreview}</p>
                     </div>
                     <button
@@ -195,6 +191,48 @@ export default function SettingsPage() {
 
               <form onSubmit={handleSaveApiKey} className="space-y-4">
                 <div>
+                  <label htmlFor="aiProvider" className="block text-sm font-medium text-gray-300 mb-2">
+                    AI Provider
+                  </label>
+                  <select
+                    id="aiProvider"
+                    value={aiProvider}
+                    onChange={(e) => setAiProvider(e.target.value as 'claude' | 'gemini')}
+                    className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="claude">Claude (Anthropic)</option>
+                    <option value="gemini">Gemini (Google)</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {aiProvider === 'claude' ? (
+                      <>
+                        Get your API key from{' '}
+                        <a
+                          href="https://console.anthropic.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-400"
+                        >
+                          console.anthropic.com
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        Get your API key from{' '}
+                        <a
+                          href="https://aistudio.google.com/app/apikey"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-400"
+                        >
+                          Google AI Studio
+                        </a>
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div>
                   <label htmlFor="apiKey" className="block text-sm font-medium text-gray-300 mb-2">
                     {hasKey ? 'Update API Key' : 'API Key'}
                   </label>
@@ -203,7 +241,7 @@ export default function SettingsPage() {
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-ant-..."
+                    placeholder={aiProvider === 'claude' ? 'sk-ant-...' : 'AIza...'}
                     className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <p className="mt-1 text-xs text-gray-500">
@@ -236,7 +274,7 @@ export default function SettingsPage() {
                   <span className={hasKey ? 'text-green-500' : 'text-gray-600'}>
                     {hasKey ? '✓' : '○'}
                   </span>
-                  <span>Claude AI market analysis</span>
+                  <span>{aiProvider === 'claude' ? 'Claude' : 'Gemini'} AI market analysis</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={hasKey ? 'text-green-500' : 'text-gray-600'}>

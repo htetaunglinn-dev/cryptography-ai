@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { binanceService } from '@/lib/services';
 import { IndicatorCalculator } from '@/lib/indicators';
 import { createClaudeService } from '@/lib/ai';
+import { createGeminiService } from '@/lib/ai/gemini';
 import { Analysis, User } from '@/lib/db/models';
 import { connectToDatabase } from '@/lib/db/connection';
 import type { ApiResponse, ClaudeAnalysis, TradingPair, TimeInterval } from '@/types';
@@ -40,19 +41,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's API key
+    // Get user's API key and provider
     await connectToDatabase();
-    const user = await User.findById(session.user.id).select('+anthropicApiKey');
+    const user = await User.findById(session.user.id).select('+anthropicApiKey aiProvider');
 
     if (!user || !user.anthropicApiKey) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: 'Claude API key not configured. Please add your Anthropic API key in settings.',
+          error: 'AI API key not configured. Please add your API key in settings.',
         },
         { status: 403 }
       );
     }
+
+    const aiProvider = user.aiProvider || 'claude';
 
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
@@ -108,9 +111,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate Claude analysis with user's API key
-    const claudeService = createClaudeService(user.anthropicApiKey);
-    const analysis = await claudeService.generateAnalysis(price, indicators, interval);
+    // Generate AI analysis with user's API key
+    let analysis: ClaudeAnalysis;
+    if (aiProvider === 'gemini') {
+      const geminiService = createGeminiService(user.anthropicApiKey);
+      analysis = await geminiService.generateAnalysis(price, indicators, interval);
+    } else {
+      const claudeService = createClaudeService(user.anthropicApiKey);
+      analysis = await claudeService.generateAnalysis(price, indicators, interval);
+    }
 
     // Save to database
     await Analysis.create({

@@ -5,6 +5,7 @@ export interface IUser {
   email: string;
   password?: string;
   anthropicApiKey?: string;
+  aiProvider?: 'claude' | 'gemini';
   image?: string;
   emailVerified?: Date;
   createdAt: Date;
@@ -17,6 +18,7 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String },
     anthropicApiKey: { type: String, select: false },
+    aiProvider: { type: String, enum: ['claude', 'gemini'], default: 'claude' },
     image: { type: String },
     emailVerified: { type: Date },
   },

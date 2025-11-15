@@ -49,6 +49,9 @@ export interface ClaudeAnalysis {
   expiresAt: number;
 }
 
+export type AIAnalysis = ClaudeAnalysis;
+export type AIProvider = 'claude' | 'gemini';
+
 export interface AnalysisRequest {
   symbol: string;
   interval: string;

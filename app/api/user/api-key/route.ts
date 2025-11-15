@@ -20,7 +20,7 @@ export async function GET() {
 
     await connectToDatabase();
 
-    const user = await User.findById(session.user.id).select('+anthropicApiKey');
+    const user = await User.findById(session.user.id).select('+anthropicApiKey aiProvider');
 
     if (!user) {
       return NextResponse.json<ApiResponse<null>>(
@@ -32,13 +32,14 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json<ApiResponse<{ hasKey: boolean; keyPreview?: string }>>({
+    return NextResponse.json<ApiResponse<{ hasKey: boolean; keyPreview?: string; aiProvider?: string }>>({
       success: true,
       data: {
         hasKey: !!user.anthropicApiKey,
         keyPreview: user.anthropicApiKey
-          ? `sk-...${user.anthropicApiKey.slice(-4)}`
+          ? `${user.anthropicApiKey.substring(0, 4)}...${user.anthropicApiKey.slice(-4)}`
           : undefined,
+        aiProvider: user.aiProvider || 'claude',
       },
     });
   } catch (error) {
@@ -67,13 +68,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { apiKey } = await request.json();
+    const { apiKey, aiProvider } = await request.json();
 
-    if (!apiKey || !apiKey.startsWith('sk-')) {
+    if (!apiKey) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: 'Invalid API key format',
+          error: 'API key is required',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (aiProvider === 'claude' && !apiKey.startsWith('sk-')) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'Invalid Claude API key format. Must start with sk-',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (aiProvider === 'gemini' && !apiKey.startsWith('AIza')) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'Invalid Gemini API key format. Must start with AIza',
         },
         { status: 400 }
       );
@@ -83,6 +104,7 @@ export async function POST(request: NextRequest) {
 
     await User.findByIdAndUpdate(session.user.id, {
       anthropicApiKey: apiKey,
+      aiProvider: aiProvider || 'claude',
     });
 
     return NextResponse.json<ApiResponse<null>>({
@@ -118,7 +140,7 @@ export async function DELETE() {
     await connectToDatabase();
 
     await User.findByIdAndUpdate(session.user.id, {
-      $unset: { anthropicApiKey: 1 },
+      $unset: { anthropicApiKey: 1, aiProvider: 1 },
     });
 
     return NextResponse.json<ApiResponse<null>>({
