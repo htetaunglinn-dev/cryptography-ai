@@ -22,6 +22,11 @@ export class BinanceService {
     this.axiosInstance = axios.create({
       baseURL: this.baseURL,
       timeout: 8000, // 8 second timeout
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CryptoAI/1.0)',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
     });
 
     // Configure retry logic
