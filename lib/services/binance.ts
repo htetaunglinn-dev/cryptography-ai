@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
+import axiosRetry from 'axios-retry';
 import type { OHLCV, CryptoPrice, HistoricalData, TradingPair, TimeInterval } from '@/types';
 
 const BINANCE_API_BASE = 'https://api.binance.com/api/v3';
@@ -12,9 +13,30 @@ export interface BinanceSymbolInfo {
 
 export class BinanceService {
   private baseURL: string;
+  private axiosInstance: AxiosInstance;
 
   constructor() {
     this.baseURL = BINANCE_API_BASE;
+
+    // Create axios instance with retry configuration
+    this.axiosInstance = axios.create({
+      baseURL: this.baseURL,
+      timeout: 8000, // 8 second timeout
+    });
+
+    // Configure retry logic
+    axiosRetry(this.axiosInstance, {
+      retries: 2, // Retry up to 2 times
+      retryDelay: (retryCount) => {
+        console.log(`Retry attempt ${retryCount} for Binance API`);
+        return retryCount * 1000; // Exponential backoff: 1s, 2s
+      },
+      retryCondition: (error) => {
+        // Retry on network errors or 5xx server errors
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+               (error.response?.status ? error.response.status >= 500 : false);
+      },
+    });
   }
 
   /**
@@ -23,8 +45,12 @@ export class BinanceService {
   async getCurrentPrice(symbol: TradingPair): Promise<CryptoPrice> {
     try {
       const [ticker24h, tickerPrice] = await Promise.all([
-        axios.get(`${this.baseURL}/ticker/24hr`, { params: { symbol } }),
-        axios.get(`${this.baseURL}/ticker/price`, { params: { symbol } }),
+        this.axiosInstance.get('/ticker/24hr', {
+          params: { symbol }
+        }),
+        this.axiosInstance.get('/ticker/price', {
+          params: { symbol }
+        }),
       ]);
 
       const data = ticker24h.data;
@@ -40,6 +66,18 @@ export class BinanceService {
         lastUpdated: new Date(),
       };
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorDetails = {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          code: error.code,
+          message: error.message,
+          url: error.config?.url,
+          data: error.response?.data
+        };
+        console.error(`Binance API Error for ${symbol}:`, errorDetails);
+        throw new Error(`Failed to fetch price for ${symbol}: ${error.message} (${error.code || 'unknown'})`);
+      }
       console.error(`Error fetching price for ${symbol}:`, error);
       throw new Error(`Failed to fetch price for ${symbol}`);
     }
@@ -54,12 +92,12 @@ export class BinanceService {
     limit: number = 100
   ): Promise<HistoricalData> {
     try {
-      const response = await axios.get(`${this.baseURL}/klines`, {
+      const response = await this.axiosInstance.get('/klines', {
         params: {
           symbol,
           interval,
           limit,
-        },
+        }
       });
 
       const data: OHLCV[] = response.data.map((candle: number[]) => ({
@@ -77,6 +115,18 @@ export class BinanceService {
         data,
       };
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorDetails = {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          code: error.code,
+          message: error.message,
+          url: error.config?.url,
+          data: error.response?.data
+        };
+        console.error(`Binance API Error for ${symbol} historical data:`, errorDetails);
+        throw new Error(`Failed to fetch historical data for ${symbol}: ${error.message} (${error.code || 'unknown'})`);
+      }
       console.error(`Error fetching historical data for ${symbol}:`, error);
       throw new Error(`Failed to fetch historical data for ${symbol}`);
     }
@@ -102,7 +152,7 @@ export class BinanceService {
    */
   async getAvailablePairs(): Promise<BinanceSymbolInfo[]> {
     try {
-      const response = await axios.get(`${this.baseURL}/exchangeInfo`);
+      const response = await this.axiosInstance.get('/exchangeInfo');
       const symbols: BinanceSymbolInfo[] = response.data.symbols
         .filter((symbol: { status: string }) => symbol.status === 'TRADING')
         .map((symbol: { symbol: string; baseAsset: string; quoteAsset: string; status: string }) => ({
@@ -113,6 +163,18 @@ export class BinanceService {
         }));
       return symbols;
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorDetails = {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          code: error.code,
+          message: error.message,
+          url: error.config?.url,
+          data: error.response?.data
+        };
+        console.error('Binance API Error fetching available pairs:', errorDetails);
+        throw new Error(`Failed to fetch available trading pairs: ${error.message} (${error.code || 'unknown'})`);
+      }
       console.error('Error fetching available pairs:', error);
       throw new Error('Failed to fetch available trading pairs');
     }

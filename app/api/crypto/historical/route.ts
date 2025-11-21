@@ -26,48 +26,71 @@ export async function GET(request: NextRequest) {
     const now = Date.now();
     let cached = null;
 
-    // Try to get from cache first (only if MongoDB is configured)
+    // Try to get from cache first with timeout (only if MongoDB is configured)
     if (process.env.MONGODB_URI) {
       try {
-        await connectToDatabase();
-        cached = await CryptoPrice.findOne({ symbol, interval });
+        // Race between cache check and 3-second timeout
+        const cachePromise = (async () => {
+          await connectToDatabase();
+          return await CryptoPrice.findOne({ symbol, interval });
+        })();
 
-        const cacheAge = cached ? now - cached.updatedAt.getTime() : Infinity;
+        const timeoutPromise = new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), 3000)
+        );
 
-        // Return cached data if fresh enough
-        if (cached && cacheAge < CACHE_DURATION * 1000) {
-          const data: HistoricalData = {
-            symbol: cached.symbol,
-            interval: cached.interval,
-            data: cached.data,
-          };
+        cached = await Promise.race([cachePromise, timeoutPromise]);
 
-          return NextResponse.json<ApiResponse<HistoricalData>>({
-            success: true,
-            data,
-            cached: true,
-            timestamp: now,
-          });
+        if (cached) {
+          const cacheAge = now - cached.updatedAt.getTime();
+
+          // Return cached data if fresh enough
+          if (cacheAge < CACHE_DURATION * 1000) {
+            const data: HistoricalData = {
+              symbol: cached.symbol,
+              interval: cached.interval,
+              data: cached.data,
+            };
+
+            return NextResponse.json<ApiResponse<HistoricalData>>({
+              success: true,
+              data,
+              cached: true,
+              timestamp: now,
+            });
+          }
         }
       } catch (dbError) {
-        console.warn('MongoDB cache unavailable, fetching directly from Binance');
+        console.warn('MongoDB cache unavailable, fetching directly from Binance:', dbError);
       }
     }
 
     // Fetch fresh data from Binance
     const data = await binanceService.getHistoricalData(symbol, interval, limit);
 
-    // Update cache (only if MongoDB is configured)
+    // Update cache asynchronously (don't wait for it)
     if (process.env.MONGODB_URI) {
-      try {
-        await CryptoPrice.findOneAndUpdate(
-          { symbol, interval },
-          { symbol, interval, data: data.data },
-          { upsert: true, new: true }
-        );
-      } catch (dbError) {
-        console.warn('Failed to update cache, continuing without cache');
-      }
+      // Fire and forget cache update with timeout
+      const updateCache = async () => {
+        try {
+          const updatePromise = CryptoPrice.findOneAndUpdate(
+            { symbol, interval },
+            { symbol, interval, data: data.data },
+            { upsert: true, new: true }
+          );
+
+          const timeoutPromise = new Promise<null>((resolve) =>
+            setTimeout(() => resolve(null), 3000)
+          );
+
+          await Promise.race([updatePromise, timeoutPromise]);
+        } catch (dbError) {
+          console.warn('Failed to update cache:', dbError);
+        }
+      };
+
+      // Don't await - let it update in the background
+      updateCache().catch((err) => console.warn('Cache update error:', err));
     }
 
     return NextResponse.json<ApiResponse<HistoricalData>>({

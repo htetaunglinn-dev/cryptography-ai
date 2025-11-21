@@ -68,9 +68,9 @@ function MACDCardComponent({ data, history }: MACDCardProps) {
     );
 
     histogramSeries.columns.template.adapters.add('fill', (fill, target) => {
-      const dataItem = target.dataItem as am5.DataItem<any>;
-      if (dataItem) {
-        const value = dataItem.get('valueY') as number;
+      const dataItem = target.dataItem;
+      if (dataItem && dataItem.dataContext) {
+        const value = (dataItem.dataContext as { histogram: number }).histogram;
         return value >= 0 ? chartColors.bullish : chartColors.bearish;
       }
       return fill;
